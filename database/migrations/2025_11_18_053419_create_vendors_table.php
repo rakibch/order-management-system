@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('vendors', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete(); // optional owner
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->text('meta')->nullable(); // json or misc
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

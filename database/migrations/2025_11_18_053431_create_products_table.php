@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
+            $table->string('sku')->unique();
+            $table->string('name')->index();
+            $table->text('description')->nullable();
+            $table->foreignId('vendor_id')->nullable()->constrained('vendors')->nullOnDelete();
+            $table->boolean('active')->default(true);
+            $table->decimal('price', 12, 2)->nullable(); // base price (variants may override)
+            $table->json('attributes')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
