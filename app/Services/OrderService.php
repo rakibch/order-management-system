@@ -1,19 +1,24 @@
 <?php
+
 namespace App\Services;
 
-use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
-use Illuminate\Support\Facades\DB;
+use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\ProductService;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class OrderService
 {
+    protected $orders;
     protected $productService;
 
-    public function __construct(ProductService $productService)
-    {
+    public function __construct(
+        OrderRepositoryInterface $orders,
+        ProductService $productService
+    ) {
+        $this->orders = $orders;
         $this->productService = $productService;
     }
 
@@ -23,59 +28,88 @@ class OrderService
     public function createOrder(array $data)
     {
         return DB::transaction(function () use ($data) {
-            $order = Order::create([
-                'user_id' => $data['user_id'],
-                'vendor_id' => $data['vendor_id'],
-                'status' => 'pending',
-                'subtotal' => 0,
-                'shipping' => $data['shipping'] ?? 0,
-                'tax' => $data['tax'] ?? 0,
-                'total' => 0,
+
+            $order = $this->orders->create([
+                'user_id'         => $data['user_id'],
+                'vendor_id'       => $data['vendor_id'],
+                'subtotal'        => 0,
+                'shipping'        => $data['shipping'] ?? 0,
+                'tax'             => $data['tax'] ?? 0,
+                'total'           => 0,
+                'status'          => 'pending',
                 'billing_address' => $data['billing_address'] ?? null,
-                'shipping_address' => $data['shipping_address'] ?? null,
+                'shipping_address'=> $data['shipping_address'] ?? null,
             ]);
 
             $subtotal = 0;
 
             foreach ($data['items'] as $itemData) {
-                $variant = ProductVariant::findOrFail($itemData['variant_id']);
+
+                $variant  = ProductVariant::findOrFail($itemData['variant_id']);
                 $quantity = $itemData['quantity'] ?? 1;
 
                 // Deduct stock
                 $this->productService->deductStock($variant, $quantity);
 
-                $totalPrice = $variant->price * $quantity;
-                $subtotal += $totalPrice;
+                $lineTotal = $variant->price * $quantity;
+                $subtotal += $lineTotal;
 
                 OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_variant_id' => $variant->id,
-                    'product_name' => $variant->product->name,
-                    'unit_price' => $variant->price,
-                    'quantity' => $quantity,
-                    'total_price' => $totalPrice,
+                    'order_id'            => $order->id,
+                    'product_variant_id'  => $variant->id,
+                    'product_name'        => $variant->product->name,
+                    'unit_price'          => $variant->price,
+                    'quantity'            => $quantity,
+                    'total_price'         => $lineTotal,
                 ]);
             }
 
-            $order->update([
+            // Update totals
+            $order = $this->orders->update($order, [
                 'subtotal' => $subtotal,
-                'total' => $subtotal + ($data['shipping'] ?? 0) + ($data['tax'] ?? 0),
-                'status' => 'processing',
+                'total'    => $subtotal + ($data['shipping'] ?? 0) + ($data['tax'] ?? 0),
+                'status'   => 'processing',
             ]);
 
-            return $order->load('items');
+            return $this->orders->loadItems($order);
         });
     }
 
-    public function cancelOrder(Order $order)
+    /**
+     * Cancel an order and restore stock
+     */
+    public function cancelOrder($order)
     {
         return DB::transaction(function () use ($order) {
+
             foreach ($order->items as $item) {
-                $this->productService->restoreStock($item->productVariant, $item->quantity);
+                $this->productService->restoreStock(
+                    $item->productVariant,
+                    $item->quantity
+                );
             }
 
-            $order->update(['status' => 'cancelled']);
-            return $order;
+            $order = $this->orders->update($order, [
+                'status' => 'cancelled'
+            ]);
+
+            return $this->orders->loadItems($order);
         });
+    }
+
+    /**
+     * List orders
+     */
+    public function listOrders(int $limit = 20)
+    {
+        return $this->orders->paginate($limit);
+    }
+
+    /**
+     * View single order
+     */
+    public function getOrder(int $id)
+    {
+        return $this->orders->findById($id);
     }
 }

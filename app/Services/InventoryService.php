@@ -1,7 +1,9 @@
 <?php
+
 namespace App\Services;
 
 use App\Models\ProductVariant;
+use App\Events\StockAdjusted;
 
 class InventoryService
 {
@@ -19,5 +21,8 @@ class InventoryService
             $variant->inventory->increment('stock', $quantity);
             $variant->inventory->decrement('reserved', $quantity);
         }
+
+        // Fire event (Listener will handle low-stock logic)
+        StockAdjusted::dispatch($variant);
     }
 }

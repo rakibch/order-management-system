@@ -50,7 +50,7 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json(auth()->user());
+        return response()->json(Auth::user());
     }
 
     public function logout()

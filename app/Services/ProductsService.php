@@ -1,37 +1,57 @@
 <?php
+
 namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Exception;
 
 class ProductService
 {
+    protected ProductRepositoryInterface $products;
+
+    public function __construct(ProductRepositoryInterface $products)
+    {
+        $this->products = $products;
+    }
+
+    /**
+     * List products (delegated to repository)
+     */
+    public function listProducts(int $perPage = 20)
+    {
+        return $this->products->paginate($perPage);
+    }
+
     /**
      * Create product with variants
      */
     public function createProduct(array $data)
     {
         return DB::transaction(function () use ($data) {
-            $product = Product::create([
-                'sku' => $data['sku'],
-                'name' => $data['name'],
+
+            // Create product through repository
+            $product = $this->products->create([
+                'sku'         => $data['sku'],
+                'name'        => $data['name'],
                 'description' => $data['description'] ?? null,
-                'vendor_id' => $data['vendor_id'] ?? null,
-                'price' => $data['price'] ?? 0,
-                'attributes' => $data['attributes'] ?? null,
-                'active' => $data['active'] ?? true,
+                'vendor_id'   => $data['vendor_id'] ?? null,
+                'price'       => $data['price'] ?? 0,
+                'attributes'  => $data['attributes'] ?? null,
+                'active'      => $data['active'] ?? true,
             ]);
 
+            // Create variants (direct model usage is OK — variants belong to product)
             if (!empty($data['variants'])) {
                 foreach ($data['variants'] as $variant) {
                     ProductVariant::create([
                         'product_id' => $product->id,
-                        'sku' => $variant['sku'],
-                        'price' => $variant['price'],
+                        'sku'        => $variant['sku'],
+                        'price'      => $variant['price'],
                         'attributes' => $variant['attributes'] ?? null,
-                        'active' => $variant['active'] ?? true,
+                        'active'     => $variant['active'] ?? true,
                     ]);
                 }
             }
@@ -46,22 +66,34 @@ class ProductService
     public function updateProduct(Product $product, array $data)
     {
         return DB::transaction(function () use ($product, $data) {
-            $product->update([
-                'name' => $data['name'] ?? $product->name,
+
+            // Update product through repository
+            $this->products->update($product, [
+                'name'        => $data['name'] ?? $product->name,
                 'description' => $data['description'] ?? $product->description,
-                'price' => $data['price'] ?? $product->price,
-                'attributes' => $data['attributes'] ?? $product->attributes,    
-                'active' => $data['active'] ?? $product->active,
+                'price'       => $data['price'] ?? $product->price,
+                'attributes'  => $data['attributes'] ?? $product->attributes,
+                'active'      => $data['active'] ?? $product->active,
             ]);
 
+            // Update or create variants
             if (!empty($data['variants'])) {
                 foreach ($data['variants'] as $variantData) {
-                    $variant = ProductVariant::find($variantData['id'] ?? 0);
-                    if ($variant) {
-                        $variant->update($variantData);
-                    } else {
-                        ProductVariant::create(array_merge($variantData, ['product_id' => $product->id]));
+
+                    // If ID provided → update
+                    if (!empty($variantData['id'])) {
+                        $variant = ProductVariant::find($variantData['id']);
+                        if ($variant) {
+                            $variant->update($variantData);
+                            continue;
+                        }
                     }
+
+                    // Otherwise create new variant
+                    ProductVariant::create(array_merge(
+                        $variantData,
+                        ['product_id' => $product->id]
+                    ));
                 }
             }
 
@@ -75,11 +107,12 @@ class ProductService
     public function deductStock(ProductVariant $variant, int $quantity)
     {
         if ($variant->inventory->stock < $quantity) {
-            throw new \Exception("Insufficient stock for variant {$variant->sku}");
+            throw new Exception("Insufficient stock for variant {$variant->sku}");
         }
 
         $variant->inventory->decrement('stock', $quantity);
         $variant->inventory->increment('reserved', $quantity);
+
         return $variant->inventory;
     }
 
@@ -90,6 +123,7 @@ class ProductService
     {
         $variant->inventory->increment('stock', $quantity);
         $variant->inventory->decrement('reserved', $quantity);
+
         return $variant->inventory;
     }
 }
