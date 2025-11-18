@@ -15,12 +15,10 @@ class ProductsSeeder extends Seeder
      */
     public function run(): void
     {
-        $vendors = Vendor::all();
-
-        foreach ($vendors as $vendor) {
+        Vendor::all()->each(function ($vendor) {
             Product::factory(5)->create([
                 'vendor_id' => $vendor->id,
             ]);
-        }
+        });
     }
 }
