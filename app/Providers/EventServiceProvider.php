@@ -15,6 +15,9 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\StockAdjusted::class => [
             \App\Listeners\SendLowStockNotification::class,
         ],
+        \App\Events\OrderStatusChanged::class => [
+        \App\Listeners\SendOrderStatusEmail::class,
+        ],
     ];
 
     /**

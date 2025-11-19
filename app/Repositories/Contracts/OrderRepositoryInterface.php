@@ -15,4 +15,6 @@ interface OrderRepositoryInterface
     public function paginate(int $limit = 20);
 
     public function loadItems(Order $order): Order;
+
+    public function updateStatus($order, string $status);
 }

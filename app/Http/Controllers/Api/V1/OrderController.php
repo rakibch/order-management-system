@@ -57,4 +57,19 @@ class OrderController extends Controller
 
         return response()->json(['message' => 'Order cancelled', 'order' => $order]);
     }
+
+    public function updateStatus(Request $request, Order $order)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,processing,shipped,delivered,cancelled'
+        ]);
+
+        $updated = $this->orderService->updateStatus($order, $request->status);
+
+        return response()->json([
+            'message' => 'Status updated',
+            'order'   => $updated
+        ]);
+    }
+
 }

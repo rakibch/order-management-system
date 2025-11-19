@@ -8,6 +8,7 @@ use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\ProductService;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use App\Models\Order;
 
 class OrderService
 {
@@ -112,4 +113,28 @@ class OrderService
     {
         return $this->orders->findById($id);
     }
+
+    public function updateStatus(Order $order, string $newStatus)
+    {
+        $validTransitions = [
+            'pending'    => ['processing', 'cancelled'],
+            'processing' => ['shipped', 'cancelled'],
+            'shipped'    => ['delivered'],
+            'delivered'  => [],
+            'cancelled'  => [],
+        ];
+
+        $current = $order->status;
+
+        if (!in_array($newStatus, $validTransitions[$current])) {
+            throw new \Exception("Invalid status transition: {$current} → {$newStatus}");
+        }
+
+        $order->update(['status' => $newStatus]);
+
+        event(new \App\Events\OrderStatusChanged($order, $current, $newStatus));
+
+        return $order->refresh();
+    }
+
 }

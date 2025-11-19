@@ -32,4 +32,10 @@ class EloquentOrderRepository implements OrderRepositoryInterface
     {
         return $order->load('items.productVariant');
     }
+
+    public function updateStatus($order, string $status)
+    {
+        $order->update(['status' => $status]);
+        return $order;
+    }
 }

@@ -53,6 +53,7 @@ Route::prefix('v1')->group(function () {
             Route::get('orders', [OrderController::class, 'index']);
             Route::get('orders/{order}', [OrderController::class, 'show']);
             Route::post('orders/{order}/cancel', [OrderController::class, 'cancel']);
+            Route::post('orders/{order}/status', [OrderController::class, 'updateStatus']);
         });
     });
 });
