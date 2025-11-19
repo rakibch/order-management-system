@@ -1,59 +1,270 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+📘 Order Management System – REST API (Laravel 12)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A scalable, modular API backend for product, inventory, and order management.
+Implements a clean architecture using Services, Repositories, Events, Jobs, and API Versioning.
 
-## About Laravel
+🚀 Features
+🔐 Authentication & Authorization
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+JWT authentication (login, register, refresh, logout)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Role-based access:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Admin → Full access
 
-## Learning Laravel
+Vendor → Manage own products
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Customer → Place orders
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Auth-protected routes using Bearer {token}
 
-## Laravel Sponsors
+📦 Product & Inventory Management
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Product CRUD
 
-### Premium Partners
+Product Variants
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Real-time inventory deduction and restore
 
-## Contributing
+Low stock detection
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Low stock queue job
 
-## Code of Conduct
+CSV bulk import (queued)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Repository pattern for products
 
-## Security Vulnerabilities
+Inventory service for stock operations
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+🛒 Order Processing
 
-## License
+Create orders with multiple items
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Status workflow:
+
+pending → processing → shipped → delivered → cancelled
+
+
+Stock deduction when order is created
+
+Stock restore on cancellation
+
+Events fired:
+
+OrderCreated
+
+OrderCancelled
+
+Email notifications (queued)
+
+Invoice generation (future-ready)
+
+🏛 Clean Architecture
+Controllers → Services → Repositories → Models
+
+
+Repository Pattern
+
+Service Layer
+
+Events & Listeners
+
+Queue Jobs
+
+API Versioning /api/v1
+
+Database Transactions for all critical operations
+
+📁 Project Structure
+app/
+ ├── Http/Controllers/Api/V1
+ ├── Services/
+ │    ├── ProductService.php
+ │    ├── OrderService.php
+ │    └── InventoryService.php
+ ├── Repositories/
+ │    ├── Contracts/
+ │    └── Eloquent/
+ ├── Jobs/
+ ├── Events/
+ ├── Listeners/
+ ├── Models/
+routes/
+ └── api.php
+docs/
+ ├── api.yaml (Swagger)
+ └── postman_collection.json
+
+🔧 Installation
+git clone https://github.com/your/repository.git
+cd project-folder
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan jwt:secret
+
+
+Run server:
+
+php artisan serve
+
+
+Run queue worker:
+
+php artisan queue:work
+
+🔐 Authentication Guide
+Register
+POST /api/v1/register
+
+Login
+POST /api/v1/login
+
+
+Response contains token:
+
+{
+  "token": "your_jwt_token"
+}
+
+
+Use it in all protected requests:
+
+Authorization: Bearer YOUR_TOKEN
+
+Refresh Token
+POST /api/v1/refresh
+
+Logout
+POST /api/v1/logout
+
+📘 API Documentation
+📄 Swagger (OpenAPI)
+
+File location:
+
+docs/api.yaml
+
+
+To view:
+
+Open https://editor.swagger.io
+
+Import api.yaml
+
+UI will render automatically
+
+Export to Postman
+
+In Swagger → Generate Collection → Postman
+
+📤 Postman Collection
+
+Included:
+
+docs/postman_collection.json
+
+
+You can import it directly in Postman.
+
+📥 Bulk Product Import (CSV)
+Endpoint:
+POST /api/v1/products/import
+
+Body:
+
+file: products.csv
+
+CSV Example:
+name,sku,price,description,vendor_id
+Mobile,MB123,500,Smartphone,1
+Laptop,LP456,900,Gaming Laptop,2
+
+
+Uploaded CSV → queued for processing → each product created with variants.
+
+🔔 Low Stock Alerts
+
+Triggered automatically when:
+
+stock <= low_stock_threshold
+
+
+Flow:
+
+InventoryService dispatches event
+
+Job queued
+
+Email notification sent
+
+🛒 Order Workflow
+Create Order
+POST /api/v1/orders
+
+Cancel Order
+POST /api/v1/orders/{id}/cancel
+
+Stock Handling
+
+Deduct stock on create
+
+Restore stock on cancel
+
+🧪 Testing
+Feature Tests
+php artisan test
+
+Authentication Required
+
+POST /products
+
+PUT /products/{id}
+
+DELETE /products/{id}
+
+POST /orders
+
+POST /orders/{id}/cancel
+
+/me, /refresh, /logout
+
+Public Endpoints
+
+GET /products
+
+GET /products/{id}
+
+🔑 Environment Variables
+
+Copy from .env.example. Important:
+
+JWT_SECRET=
+QUEUE_CONNECTION=database
+MAIL_MAILER=smtp
+
+🛠 Technologies
+
+Laravel 12
+
+PHP 8.2+
+
+MySQL
+
+JWT Auth
+
+Queue Jobs
+
+Events & Listeners
+
+Repository Pattern
+
+Swagger / Postman
+
+👨‍💻 Author
+
+Your Name
+Email: rakib9204@gmail.com
+
+GitHub: https://github.com/rakibch/

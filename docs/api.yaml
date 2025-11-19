@@ -1,0 +1,365 @@
+openapi: 3.0.3
+info:
+  title: E-Commerce Order Management API
+  version: 1.0.0
+  description: >
+    A scalable REST API for products, orders, inventory management, authentication, CSV import, and invoice generation.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Authentication
+  - name: Products
+  - name: Orders
+
+paths:
+
+  ##############################
+  # AUTHENTICATION
+  ##############################
+  /register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation, role]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                password_confirmation: { type: string }
+                role:
+                  type: string
+                  enum: [admin, vendor, customer]
+      responses:
+        201:
+          description: User created
+
+  /login:
+    post:
+      tags: [Authentication]
+      summary: Login and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        200:
+          description: Token returned
+
+  /me:
+    get:
+      tags: [Authentication]
+      summary: Get authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Current user
+
+  /logout:
+    post:
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      summary: Logout user
+      responses:
+        200:
+          description: Logged out
+
+  /refresh:
+    post:
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      summary: Refresh JWT token
+      responses:
+        200:
+          description: Token refreshed
+
+
+  ##############################
+  # PRODUCTS
+  ##############################
+
+  /products:
+    get:
+      tags: [Products]
+      summary: List products with pagination
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Products list
+    post:
+      tags: [Products]
+      summary: Create product (Admin & Vendor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, sku]
+              properties:
+                name: { type: string }
+                sku: { type: string }
+                price: { type: number }
+                vendor_id: { type: integer }
+                description: { type: string }
+                variants:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      sku: { type: string }
+                      price: { type: number }
+                      attributes:
+                        type: object
+      responses:
+        201:
+          description: Product created
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Get single product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: Product returned
+
+    put:
+      tags: [Products]
+      summary: Update product
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        200:
+          description: Product updated
+
+    delete:
+      tags: [Products]
+      summary: Delete product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+      responses:
+        200:
+          description: Product deleted
+
+
+  ##############################
+  # PRODUCT SEARCH
+  ##############################
+
+  /products/search:
+    get:
+      tags: [Products]
+      summary: Search products
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Search results
+
+
+  ##############################
+  # BULK CSV IMPORT
+  ##############################
+
+  /products/import:
+    post:
+      tags: [Products]
+      summary: Upload CSV and import products asynchronously
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Import started
+
+
+  ##############################
+  # ORDERS
+  ##############################
+
+  /orders:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: List orders
+      responses:
+        200:
+          description: Orders list
+
+    post:
+      tags: [Orders]
+      summary: Create order (Customer)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, vendor_id, items]
+              properties:
+                user_id: { type: integer }
+                vendor_id: { type: integer }
+                shipping: { type: number }
+                tax: { type: number }
+                billing_address:
+                  type: object
+                shipping_address:
+                  type: object
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [variant_id, quantity]
+                    properties:
+                      variant_id: { type: integer }
+                      quantity: { type: integer }
+      responses:
+        201:
+          description: Order created
+
+  /orders/{id}:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Get order details
+      parameters:
+        - name: id
+          in: path
+          required: true
+      responses:
+        200:
+          description: Order returned
+
+
+  ##############################
+  # ORDER STATUS UPDATE
+  ##############################
+
+  /orders/{id}/status:
+    post:
+      tags: [Orders]
+      summary: Update order status (admin/vendor)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, processing, shipped, delivered, cancelled]
+      responses:
+        200:
+          description: Status updated
+
+
+  ##############################
+  # CANCEL ORDER
+  ##############################
+
+  /orders/{id}/cancel:
+    post:
+      tags: [Orders]
+      summary: Cancel order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema: { type: integer }
+      responses:
+        200:
+          description: Order cancelled
+
+
+  ##############################
+  # DOWNLOAD INVOICE
+  ##############################
+
+  /orders/{id}/invoice:
+    get:
+      tags: [Orders]
+      summary: Download invoice PDF
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+      responses:
+        200:
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
