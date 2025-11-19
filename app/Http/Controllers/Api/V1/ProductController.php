@@ -62,4 +62,32 @@ class ProductController extends Controller
         $product->delete();
         return response()->json(['message' => 'Product deleted']);
     }
+
+    public function importCsv(Request $request)
+    {
+       $request->validate([
+        'file' => 'required|mimes:csv,txt|max:2048'
+    ]);
+
+        $path = $request->file('file')->store('imports');
+
+        // Dispatch job (async)
+        \App\Jobs\ImportProductsJob::dispatch($path, auth()->id());
+
+        return response()->json([
+            'message' => 'CSV uploaded. Import is processing in background.'
+        ]);
+    }
+
+    public function search(Request $request)
+    {
+        $request->validate([
+            'q' => 'required|string|min:2'
+        ]);
+
+        return response()->json(
+            $this->productService->search($request->q)
+        );
+    }
+
 }

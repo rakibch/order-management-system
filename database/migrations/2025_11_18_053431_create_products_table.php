@@ -20,6 +20,7 @@ return new class extends Migration
             $table->boolean('active')->default(true);
             $table->decimal('price', 12, 2)->nullable(); // base price (variants may override)
             $table->json('attributes')->nullable();
+            $table->fullText(['name', 'description']);
             $table->timestamps();
             $table->softDeletes();
         });

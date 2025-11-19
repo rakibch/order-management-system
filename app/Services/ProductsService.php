@@ -11,10 +11,11 @@ use Exception;
 class ProductService
 {
     protected ProductRepositoryInterface $products;
-
-    public function __construct(ProductRepositoryInterface $products)
+    protected ProductSearchService $searchService;
+    public function __construct(ProductRepositoryInterface $products, ProductSearchService $searchService)
     {
         $this->products = $products;
+        $this->searchService = $searchService;
     }
 
     /**
@@ -126,4 +127,38 @@ class ProductService
 
         return $variant->inventory;
     }
+
+    public function import(string $filePath)
+    {
+        $csv = Reader::createFromPath(storage_path('app/' . $filePath), 'r');
+        $csv->setHeaderOffset(0);
+
+        foreach ($csv as $row) {
+            // Skip empty lines
+            if (!isset($row['sku']) || empty(trim($row['sku']))) {
+                continue;
+            }
+
+            // Skip duplicates
+            if ($this->products->findBySku($row['sku'])) {
+                continue;
+            }
+
+            $this->products->create([
+                'sku'        => $row['sku'],
+                'name'       => $row['name'],
+                'price'      => $row['price'],
+                'vendor_id'  => $row['vendor_id'] ?? null,
+                'description'=> $row['description'] ?? null,
+                'attributes' => json_decode($row['attributes'] ?? '{}', true),
+            ]);
+        }
+    }
+
+    public function search(string $keyword)
+    {
+        return $this->searchService->search($keyword);
+    }
+
+
 }

@@ -46,6 +46,8 @@ Route::prefix('v1')->group(function () {
             // Products
             Route::get('products', [ProductController::class, 'index']);
             Route::get('products/{product}', [ProductController::class, 'show']);
+            Route::post('products/import', [ProductController::class, 'importCsv']);
+            Route::get('products/search', [ProductController::class, 'search']);
 
             // Orders
             Route::get('orders', [OrderController::class, 'index']);

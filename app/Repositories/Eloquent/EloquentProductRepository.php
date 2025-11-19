@@ -37,4 +37,12 @@ class EloquentProductRepository implements ProductRepositoryInterface
     {
         return (bool)$product->delete();
     }
+
+    public function search(string $keyword, int $limit = 20)
+    {
+        return Product::whereFullText(['name', 'description'], $keyword)
+            ->with('variants')
+            ->paginate($limit);
+    }
+
 }
